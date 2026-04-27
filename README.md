@@ -1,8 +1,3 @@
----
-title: "DATA 555 Final Project"
-output: github_document
----
-
 ## Overview
 
 This dashboard displays select results from my masters thesis titled "Evaluating the Reactogenicity-Immunogenicity Relationship Among Pandemic Influenza Vaccines."

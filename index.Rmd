@@ -19,7 +19,7 @@ Column {.sidebar data-width=300}
 
 Individual participant data meta-regression was used to evaluate the reactogenicity-immunogenicity relationship among 12 pandemic influenza vaccines. Data comes from clinical trials conducted by the National Institute of Allergy and Infectious Diseases and is not publicly available. Trials took place between 2009 and 2020 at Vaccine and Treatment Evaluation Unit network locations. Participants were healthy, non-pregnant, immuno-competent adults. 
 
-Note: All 12 studies were used for bivariable analysis, but only 11 studies were included in the full model.
+Note: All 12 studies (N=5,474) were used for bivariable analysis, but only 11 studies (N=4,690) were included in the full model.
 
 **Covariates included in the model:**
 

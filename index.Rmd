@@ -31,6 +31,8 @@ Note: All 12 studies were used for bivariable analysis, but only 11 studies were
 
 Tip: In the forest plot, click on a strain in the legend to hide it on the plot.
 
+Access the Github repository [here](https://github.com/annie-nicholas/DATA555-Final-Dashboard/tree/main).
+
 Row {.tabset data-width=700 data-height=800}
 -------------------------------------
 

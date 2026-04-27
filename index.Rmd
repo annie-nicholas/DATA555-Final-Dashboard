@@ -4,6 +4,8 @@ author: "Annie Nicholas"
 output: 
   flexdashboard::flex_dashboard:
     orientation: rows
+    vertical_layout: fill
+    source_code: embed
 ---
 
 ```{r setup, include=FALSE}
@@ -29,7 +31,7 @@ Note: All 12 studies were used for bivariable analysis, but only 11 studies were
 
 Tip: In the forest plot, click on a strain in the legend to hide it on the plot.
 
-Row {.tabset data-width=800 data-height=800}
+Row {.tabset data-width=700 data-height=800}
 -------------------------------------
 
 ### Bivariable Association
@@ -204,12 +206,12 @@ d$hover_text <- paste0(
 
 p1 <- ggplot(d, aes(x = global_react_total, y = final_logratio)) +
   geom_point(aes(text=hover_text), size = 0.5, alpha = 0.5) +
-  facet_wrap(~ strain, nrow = 2, ncol = 2) +
+  facet_wrap(~ strain) +
 
   geom_text(
     data = cor_stats,
     aes(
-      x = 20,
+      x = 17.5,
       y = -3,
       label = paste0(
         "Rho = ", round(rho, 2),
@@ -217,24 +219,29 @@ p1 <- ggplot(d, aes(x = global_react_total, y = final_logratio)) +
       )
     ),
     inherit.aes = FALSE,
-    size = 4
+    size = 3
   ) +
 
   geom_smooth(aes(color = strain), linewidth = 0.5) +
   scale_color_brewer(palette = "Set1") +
   labs(
-    x = "Reactogenicity (Total number of adverse events)",
+    x = "Reactogenicity\n(Total number of adverse events)",
     y = "Immunogenicity (Log Ratio)"
   ) +
   theme_minimal() +
-  theme(axis.title = element_text(size = 14))+
+  theme(axis.title = element_text(size = 12))+
   theme(legend.position = "none",
-        strip.text = element_text(size = 14))
+        strip.text = element_text(size = 12))
 
 ggplotly(p1, tooltip = "text") %>%
-  layout(
-    margin = list(b = 90, l = 90)
-  )
+  layout(autosize = TRUE,
+           margin = list(
+      l = 80,
+      r = 30,
+      t = 30,
+      b = 80
+    ))
+  
 ```
 
 ### Forest Plot
@@ -361,15 +368,24 @@ p2 <- ggplot(forest_df,
     color = "Strain"
   ) +
   theme_bw() +
-  theme(axis.title = element_text(size = 14))+
+  theme(axis.title = element_text(size = 12))+
   guides(shape = "none", size = "none")
 
 ggplotly(p2, tooltip="text") %>%
   layout(
-    margin = list(b = 90, l = 90),
+    autosize = TRUE,
+    margin = list(
+      l = 80,
+      r = 30,
+      t = 30,
+      b = 80
+    ),
     legend = list(
-      x = 0.02,   # left (0 = left edge, 1 = right edge)
-      y = 0.98,   # top
+      title = list(text = "Strain", font = list(size = 11)),
+      font=list(size=10),
+      itemsizing = "constant",
+      x = 0.01,   # left (0 = left edge, 1 = right edge)
+      y = 0.99,   # top
       xanchor = "left",
       yanchor = "top",
       bgcolor = "white",

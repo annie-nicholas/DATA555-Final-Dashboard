@@ -1,0 +1,385 @@
+---
+title: "DATA 555 Final Project"
+author: "Annie Nicholas"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+Column {.sidebar data-width=300}
+-------------------------------------
+
+### **Study Information**
+
+Individual participant data meta-regression was used to evaluate the reactogenicity-immunogenicity relationship among 12 pandemic influenza vaccines. Data comes from clinical trials conducted by the National Institute of Allergy and Infectious Diseases and is not publicly available. Trials took place between 2009 and 2017 at Vaccine and Treatment Evaluation Unit network locations. Participants were healthy, non-pregnant, immuno-competent adults. 
+
+Note: All 12 studies were used for bivariable analysis, but only 11 studies were included in the full model.
+
+**Covariates included in the model:**
+
+- Sex 
+- Age group (18-30, 31-40, 41-50, 51-64, 65+ years old)
+- Vaccine dosage (low, medium, high)
+- Adjuvant (combinations of AS03 and MF59)
+- Strain (H5N1, H5N8, H7N9)
+
+Tip: In the forest plot, click on a strain in the legend to hide it on the plot.
+
+Row {.tabset data-width=800 data-height=800}
+-------------------------------------
+
+### Bivariable Association
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(lme4)
+library(ggpubr)
+library(janitor)
+library(RColorBrewer)
+library(plotly)
+library(ggpp)
+
+d <- read.csv("data/Final_1113.csv")
+d <- d[!is.na(d$final_logratio), ]
+
+d <- d %>%
+  mutate(dosage = case_when(
+    total_dose <= 11.25 ~ "low",
+    total_dose <= 22.5 ~ "med",
+    TRUE ~ "high"
+  ))
+
+d <- d %>%
+  mutate(adj = case_when(
+    study == "09-0058" & trttrue == "T1" ~ 1,
+    study == "09-0058" & trttrue == "T2" ~ 1,
+    study == "09-0058" & trttrue == "T3" ~ 1,
+    study == "10-0017" & trttrue == "T1" ~ 1,
+    study == "10-0017" & trttrue == "T2" ~ 1,
+    study == "10-0017" & trttrue == "T3" ~ 1,
+    study == "13-0033" & trttrue == "T1" ~ 1,
+    study == "13-0033" & trttrue == "T2" ~ 1,
+    study == "13-0033" & trttrue == "T3" ~ 1,
+    study == "15-0064" & trttrue == "1" ~ 1,
+    study == "15-0064" & trttrue == "4" ~ 1,
+    study == "15-0066" & trttrue == "GROUP1" ~ 1,
+    study == "15-0066" & trttrue == "GROUP2" ~ 1,
+    study == "17-0075" & trttrue == "GROUP1" ~ 1,
+    study == "17-0075" & trttrue == "GROUP2" ~ 1,
+    study == "17-0075" & trttrue == "GROUP3" ~ 1,
+    study == "17-0078" & trttrue == "1" ~ 1,
+    study == "17-0078" & trttrue == "2" ~ 1,
+    study == "17-0078" & trttrue == "4" ~ 1,
+    study == "17-0078" & trttrue == "5" ~ 1,
+    study == "17-0090" & trttrue == "1" ~ 1,
+    study == "10-0016" & trttrue == "T1" ~ 2,
+    study == "10-0016" & trttrue == "T2" ~ 2,
+    study == "10-0016" & trttrue == "T3" ~ 2,
+    study == "13-0032" & trttrue == "T1" ~ 2,
+    study == "13-0032" & trttrue == "T2" ~ 2,
+    study == "13-0032" & trttrue == "T3" ~ 2,
+    study == "13-0033" & trttrue == "T8" ~ 2,
+    study == "13-0034" ~ 2,
+    study == "15-0064" & trttrue == "2" ~ 2,
+    study == "15-0064" & trttrue == "5" ~ 2,
+    study == "15-0066" & trttrue == "GROUP4" ~ 2,
+    study == "15-0066" & trttrue == "GROUP5" ~ 2,
+    study == "17-0076" & trttrue == "3.7579WA2x" ~ 2,
+    study == "17-0076" & trttrue == "7.579WA2x" ~ 2,
+    study == "17-0076" & trttrue == "1579WA2x" ~ 2,
+    study == "13-0033" & trttrue == "T4" ~ 3,
+    study == "17-0078" & trttrue == "3" ~ 3,
+    study == "17-0078" & trttrue == "6" ~ 3,
+    study == "13-0033" & trttrue == "T5" ~ 3,
+    study == "13-0032" & trttrue == "T4" ~ 4,
+    study == "13-0032" & trttrue == "T5" ~ 4,
+    study == "13-0033" & trttrue == "T6" ~ 5,
+    study == "13-0033" & trttrue == "T7" ~ 5,
+    TRUE ~ 0
+  ))
+
+# More detailed adj variable
+# 0 = no adj
+# 1 = none then AS03
+# 2 = none then MF59
+# 3 = AS03 then none
+# 4 = MF59 then none
+# 5 = AS03 then MF59
+# 6 = MF59 then AS03
+# 7 = AS03 for all
+# 8 = MF59 for all
+
+d <- d %>%
+  mutate(adj_2 = case_when(
+    study == "09-0058" & trttrue == "T1" ~ 7,
+    study == "09-0058" & trttrue == "T2" ~ 7,
+    study == "09-0058" & trttrue == "T3" ~ 7,
+    study == "10-0017" & trttrue == "T1" ~ 7,
+    study == "10-0017" & trttrue == "T2" ~ 7,
+    study == "10-0017" & trttrue == "T3" ~ 7,
+    study == "13-0033" & trttrue == "T1" ~ 7,
+    study == "13-0033" & trttrue == "T2" ~ 7,
+    study == "13-0033" & trttrue == "T3" ~ 7,
+    study == "15-0064" & trttrue == "1" ~ 7,
+    study == "15-0064" & trttrue == "4" ~ 7,
+    study == "15-0066" & trttrue == "GROUP1" ~ 7,
+    study == "15-0066" & trttrue == "GROUP2" ~ 7,
+    study == "17-0075" & trttrue == "GROUP1" ~ 7,
+    study == "17-0075" & trttrue == "GROUP2" ~ 7,
+    study == "17-0075" & trttrue == "GROUP3" ~ 7,
+    study == "17-0078" & trttrue == "1" ~ 7,
+    study == "17-0078" & trttrue == "2" ~ 7,
+    study == "17-0078" & trttrue == "4" ~ 7,
+    study == "17-0078" & trttrue == "5" ~ 7,
+    study == "17-0090" & trttrue == "1" ~ 7,
+    study == "10-0016" & trttrue == "T1" ~ 8,
+    study == "10-0016" & trttrue == "T2" ~ 8,
+    study == "10-0016" & trttrue == "T3" ~ 8,
+    study == "13-0032" & trttrue == "T1" ~ 8,
+    study == "13-0032" & trttrue == "T2" ~ 8,
+    study == "13-0032" & trttrue == "T3" ~ 8,
+    study == "13-0033" & trttrue == "T8" ~ 8,
+    study == "13-0034" ~ 8,
+    study == "15-0064" & trttrue == "2" ~ 8,
+    study == "15-0064" & trttrue == "5" ~ 8,
+    study == "15-0066" & trttrue == "GROUP4" ~ 8,
+    study == "15-0066" & trttrue == "GROUP5" ~ 8,
+    study == "17-0076" & trttrue == "3.7579WA2x" ~ 8,
+    study == "17-0076" & trttrue == "7.579WA2x" ~ 8,
+    study == "17-0076" & trttrue == "1579WA2x" ~ 8,
+    study == "13-0033" & trttrue == "T4" ~ 3,
+    study == "17-0078" & trttrue == "3" ~ 3,
+    study == "17-0078" & trttrue == "6" ~ 3,
+    study == "13-0033" & trttrue == "T5" ~ 1,
+    study == "13-0032" & trttrue == "T4" ~ 4,
+    study == "13-0032" & trttrue == "T5" ~ 2,
+    study == "13-0033" & trttrue == "T6" ~ 5,
+    study == "13-0033" & trttrue == "T7" ~ 6,
+    TRUE ~ 0
+  ))
+
+# New dose_adj variable
+d <- d %>%
+  mutate(dosage_adj_2 = case_when(
+    dosage == "low" & adj_2 == 0 ~ 0,
+    dosage == "low" & adj_2 == 7 ~ 1,
+    dosage == "low" & adj_2 == 8 ~ 2,
+    dosage == "med" & adj_2 == 0 ~ 3,
+    dosage == "med" & adj_2 == 3 ~ 4,
+    dosage == "med" & adj_2 == 4 ~ 5,
+    dosage == "med" & adj_2 == 6 ~ 6,
+    dosage == "med" & adj_2 == 7 ~ 7,
+    dosage == "med" & adj_2 == 8 ~ 8,
+    dosage == "high" & adj_2 == 0 ~ 9,
+    dosage == "high" & adj_2 == 1 ~ 10,
+    dosage == "high" & adj_2 == 2 ~ 11,
+    dosage == "high" & adj_2 == 3 ~ 12,
+    dosage == "high" & adj_2 == 5 ~ 13,
+    dosage == "high" & adj_2 == 7 ~ 14,
+    dosage == "high" & adj_2 == 8 ~ 15))
+
+cor_stats <- d %>%
+  group_by(strain) %>%
+  summarise(
+    rho = cor(global_react_total, final_logratio, method = "spearman", use = "complete.obs"),
+    p = cor.test(global_react_total, final_logratio, method = "spearman")$p.value
+  )
+
+cor_stats$p_label <- ifelse(
+  cor_stats$p < 0.001,
+  "<0.001",
+  sprintf("%.3f", cor_stats$p)
+)
+
+d$hover_text <- paste0(
+  "Reactogenicity: ", d$global_react_total,
+  "\nImmunogenicity: ", round(d$final_logratio, 2),
+  "\nStrain: ", d$strain
+)
+
+p1 <- ggplot(d, aes(x = global_react_total, y = final_logratio)) +
+  geom_point(aes(text=hover_text), size = 0.5, alpha = 0.5) +
+  facet_wrap(~ strain, nrow = 2, ncol = 2) +
+
+  geom_text(
+    data = cor_stats,
+    aes(
+      x = 20,
+      y = -3,
+      label = paste0(
+        "Rho = ", round(rho, 2),
+        "\np = ", p_label
+      )
+    ),
+    inherit.aes = FALSE,
+    size = 4
+  ) +
+
+  geom_smooth(aes(color = strain), linewidth = 0.5) +
+  scale_color_brewer(palette = "Set1") +
+  labs(
+    x = "Reactogenicity (Total number of adverse events)",
+    y = "Immunogenicity (Log Ratio)"
+  ) +
+  theme_minimal() +
+  theme(axis.title = element_text(size = 14))+
+  theme(legend.position = "none",
+        strip.text = element_text(size = 14))
+
+ggplotly(p1, tooltip = "text") %>%
+  layout(
+    margin = list(b = 90, l = 90)
+  )
+```
+
+### Forest Plot
+
+```{r}
+df <- d[d$strain != "H1N1", ]
+
+model <- lmer(
+  final_logratio ~ global_react_total + as.factor(age_group) + gender +
+  as.factor(dosage_adj_2)*strain +
+  (1 + global_react_total | study),
+  data = df
+)
+
+# Creating data set just for study and strain
+study_strain <- d %>%
+  select(study, strain) %>%
+  distinct()
+
+# Study-specific slopes
+re <- ranef(model)$study
+re$study <- rownames(re)
+
+beta <- fixef(model)["global_react_total"]
+
+forest_df <- re %>%
+  mutate(
+    estimate = beta + global_react_total
+  ) %>%
+  select(study, estimate)
+
+# Standard errors for slopes
+re_full <- ranef(model, condVar = TRUE)$study
+postvar <- attr(re_full, "postVar")
+se <- sqrt(postvar[2,2,])  # slope SE
+
+forest_df$se <- se
+
+forest_df <- forest_df %>%
+  mutate(
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+
+# Joining with study/strain 
+forest_df <- forest_df %>%
+  left_join(study_strain, by = "study")
+
+# Pooled estimate
+overall <- data.frame(
+  study = "Overall",
+  estimate = beta,
+  se = sqrt(vcov(model)["global_react_total","global_react_total"])
+)
+
+overall <- overall %>%
+  mutate(
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+
+# Combine
+forest_df <- bind_rows(forest_df, overall)
+
+# Fix ordering (numeric studies + Overall last)
+forest_df <- forest_df %>%
+  mutate(
+    study = ifelse(study == "Overall", "Overall", as.character(study))
+  )
+
+# Order studies by strain, then study
+study_order <- forest_df %>%
+  filter(study != "Overall") %>%
+  arrange(strain, study) %>%
+  pull(study)
+
+# Add overall at the end
+study_order <- c(study_order, "Overall")
+
+# Apply ordering (reverse for ggplot)
+forest_df$study <- factor(forest_df$study, levels = rev(study_order))
+
+# Mark overall vs study
+forest_df <- forest_df %>%
+  mutate(type = ifelse(study == "Overall", "Overall", "Study"))
+
+# Mark strain for overall
+forest_df$strain[forest_df$study == "Overall"] <- "Overall"
+
+# Text for tooltips
+forest_df$hover_text <- paste0(
+  "Study: ", forest_df$study,
+  "<br>Estimate: ", sprintf("%.3f", forest_df$estimate),
+  "<br>95% CI: [",
+  sprintf("%.3f", forest_df$lower), ", ",
+  sprintf("%.3f", forest_df$upper), "]"
+)
+
+# Plot
+p2 <- ggplot(forest_df,
+       aes(x = estimate, y = study)) +
+  geom_point(aes(shape = type, size = type, color=strain, text = hover_text)) +
+  geom_errorbarh(aes(xmin = lower, xmax = upper, color = strain),
+                 height = 0.2) +
+  geom_vline(xintercept = 0, color = "#48494B", linewidth = 0.7) +
+  geom_vline(xintercept = beta,
+             linetype = "dashed",
+             color = "black") +
+   scale_color_manual(values = c(
+    "H5N1" = "#377EB8",
+    "H5N8" = "#4DAF4A",
+    "H7N9" = "#984EA3",
+    "Overall" = "black"
+  )) +
+  scale_x_continuous(                                 
+    breaks = seq(-0.1, 0.15, by = 0.05)
+  ) +
+  coord_cartesian(xlim = c(-0.1, 0.15)) +
+  scale_shape_manual(values = c("Study" = 16, "Overall" = 18)) +  # diamond
+  scale_size_manual(values = c("Study" = 3, "Overall" = 4)) +
+  labs(
+    x = "Study-specific random slopes",
+    y = "Study",
+    color = "Strain"
+  ) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 14))+
+  guides(shape = "none", size = "none")
+
+ggplotly(p2, tooltip="text") %>%
+  layout(
+    margin = list(b = 90, l = 90),
+    legend = list(
+      x = 0.02,   # left (0 = left edge, 1 = right edge)
+      y = 0.98,   # top
+      xanchor = "left",
+      yanchor = "top",
+      bgcolor = "white",
+      bordercolor = "black",
+      borderwidth = 1
+    )
+  )
+```
+
+Row {data-height=200}
+------------------------------------
+### Real-World Impact
+Understanding the reactogenicity-immunogenicity relationship could improve public health communication by giving meaning to the adverse events that people experience after receiving a vaccination. Additionally, developing reliable predictive frameworks that integrate clinical and immunologic markers could improve early evaluation of vaccine candidates and inform more efficient trial designs.
